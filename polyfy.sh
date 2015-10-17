@@ -36,4 +36,8 @@ convert -size "$imagewidth"x"$imageheight" xc:none -fill black -draw "path 'M $p
 convert $file /tmp/polyfy1.$format -alpha set -compose Dstin -composite $negate /tmp/polyfy2.$format
 composite -gravity center /tmp/polyfy2.$format $file /tmp/polyfy3.$format
 convert /tmp/polyfy3.$format -stroke $bordercolor -strokewidth $borderwidth -fill none -draw "path 'M $point1,$pointa $point2,$pointb $point3,$pointb Z M $point1,$pointb $point2,$pointa $point3,$pointa Z'" $directory$filename-polyfy.$format #M 1280,1042 1000,557 1560,557 Z
+
 rm -f /tmp/{polyfy1.$format,polyfy2.$format,polyfy3.$format}
+
+echo "file saved to "$directory"/"$filename"-polify."$format""
+
