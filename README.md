@@ -8,10 +8,10 @@ polyfy /path/to/image <options>
 ```
 
 #####options:
-[color] Choose r, g, b, or any combination of the three such as rg br. Controls which colors to turn negative (default: rgb )  
-[polygon] Draw a triangle, square, or diamond (default: triangle )  
-[size] Change the polygon size as a fraction of the image's height with an s followed by a number (default: s3 #this means the polygon side length is 1/3 of the image's height )  
-[borderwidth] Change the border width of the polygon with b followed by a number (default: b15 )
+[color] Choose r, g, b, or any combination of the three such as rg br. Controls which colors to turn negative (default: rgb)  
+[polygon] Draw a triangle, square, or diamond (default: triangle)  
+[size] Change the polygon size as a fraction of the image's height with an s followed by a number (default: s3 #this means the polygon side length is 1/3 of the image's height)  
+[borderwidth] Change the border width of the polygon with b followed by a number (default: b15)
 
 
 #####examples:
