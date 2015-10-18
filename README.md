@@ -15,11 +15,13 @@ options:
 examples:
 ```
 polyfy path/to/image
-polyfy the image with the default options
-
-polyfy path/to/image diamond br s2 b20
-polyfy with a diamond | negate the blue and red channels | with the polygon's side length at 1/2 the image's height | with a border width of 20pt
 ```
+>polyfy the image with the default options
+```
+polyfy path/to/image diamond br s2 b20
+```
+>polyfy with a diamond | negate the blue and red channels | with the polygon's side length at 1/2 the image's height | with a border width of 20pt
+
 
 dependencies:  
 imagemagick
