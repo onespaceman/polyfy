@@ -8,45 +8,10 @@ usage () {
                 echo "polyfy /path/to/file <options>";
                 echo "Available options";
                 echo "-b <number> - width of border (default: 10)";
-                echo "-s <number> - size of triangle as a fraction of image height (default: 3)";
-                echo "triangle|diamond|square - what shape to draw";
+                echo "-s <number> - size of polygon as a fraction of image height (default: 3)";
+                echo "triangle|diamond|square - what shape to draw (default: diamond)";
                 echo "over|under|none - if the second polygon is drawn over or under the first (default: over)";
-                exit 1;
-}
-
-getinfo () {
-        filename=$(identify -format "%t" $file);
-        directory=$(identify -quiet -format "%d" $file);
-        format=$(identify -format "%e" $file);
-        imagewidth=$(identify -format "%w" $file);
-        imageheight=$(identify -format "%h" $file);
-}
-
-triangle () {
-        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-        height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1+0.5)}');
-        points;
-        draw1="M $point1,$pointa $point2,$pointb $point3,$pointb Z";
-        draw2="M $point1,$pointb $point2,$pointa $point3,$pointa Z";
-}
-
-square () {
-        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-        height=$length;
-        points;
-        pluslength=$(echo "sqrt(($length^2)*2)/2" | bc -l | awk '{print int($1+0.5)}');
-        point4=$((point1+pluslength));
-        point5=$((point1-pluslength));
-        pointd=$((pointc+pluslength));
-        pointe=$((pointc-pluslength));
-        draw1="M $point2,$pointb $point2,$pointa $point3,$pointa $point3,$pointb Z";
-        draw2="M $point4,$pointc $point1,$pointd $point5,$pointc $point1,$pointe Z";
-}
-
-diamond () {
-        square
-        draw1="M $point4,$pointc $point1,$pointd $point5,$pointc $point1,$pointe Z";
-        draw2="M $point2,$pointb $point2,$pointa $point3,$pointa $point3,$pointb Z";
+                exit 0;
 }
 
 points () {
@@ -58,25 +23,75 @@ points () {
         pointc=$((imageheight/2));
 }
 
-borderzero () {
+triangle () {
+        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
+        height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1+0.5)}');
+        points;
+        path1="M $point1,$pointa $point2,$pointb $point3,$pointb Z";
+        path2="M $point1,$pointb $point2,$pointa $point3,$pointa Z";
+}
+
+square () {
+        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
+        height=$length;
+        points;
+        pluslength=$(echo "sqrt(($length^2)*2)/2" | bc -l | awk '{print int($1+0.5)}');
+        point4=$((point1+pluslength));
+        point5=$((point1-pluslength));
+        pointd=$((pointc+pluslength));
+        pointe=$((pointc-pluslength));
+        path1="M $point2,$pointb $point2,$pointa $point3,$pointa $point3,$pointb Z";
+        path2="M $point4,$pointc $point1,$pointd $point5,$pointc $point1,$pointe Z";
+}
+
+diamond () {
+        square
+        path1="M $point4,$pointc $point1,$pointd $point5,$pointc $point1,$pointe Z";
+        path2="M $point2,$pointb $point2,$pointa $point3,$pointa $point3,$pointb Z";
+}
+
+borderoptions () {
         if [ $borderwidth -eq 0 ]; then
-                draw1=""
-                draw2=""
-                draw=""
+                path1=""
+                path2=""
+                path=""
+        else
+                case $border2 in
+                        over)
+                                path="$path1 $path2"
+                                ;;
+                        under)
+                                convert $file -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$path2'" /tmp/polyfy1.png
+                                path="$path1"
+                                file="/tmp/polyfy1.png"
+                                ;;
+                        none)
+                                path="$path1"
+                                ;;
+                esac
+
         fi
 }
 
-#variables
+#default variables
 bordercolor="white"
 borderwidth="10"
 channel="rgb"
 size="3"
-file="$1"; shift
 shape="diamond"
+border2="over"
 
-#get file name
+#get file, test if it exists, and get info
+file="$1"; shift
+
 if [ ! -f $file ]; then
         usage
+else
+        filename=$(basename ${file%.*})
+        format=$(basename ${file##*.})
+        directory=$(dirname $file)
+        imagewidth=$(identify -format "%w" $file)
+        imageheight=$(identify -format "%h" $file)
 fi
 
 #get options
@@ -88,7 +103,7 @@ do
                         shift
                         ;;
                 -b|--borderwidth)
-                        borderwidth="$2"
+             bash multiple if           borderwidth="$2"
                         shift 2
                         ;;
                 -s|--size)
@@ -102,12 +117,12 @@ do
                 over)
                         shift
                         ;;
-                under)
-                        step3="convertunder"
+                under|behind)
+                        border2="under"
                         shift
                         ;;
                 none)
-                        step3="convertnone"
+                        border2="none"
                         shift
                         ;;
                 *)
@@ -115,30 +130,17 @@ do
         esac
 done
 
-getinfo
-$shape
-negate="-channel ${channel//[^rgb]/} -negate"
-draw="$draw1 $draw2"
+$shape #calls chosen shape function
 
 #conversion with imagemagick
-convertunder () {
-        convert $file -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$draw2'" /tmp/polyfy1.$format
-        draw="$draw1"
-        file="/tmp/polyfy1.$format"
-}
-convertnone () {
-        draw="$draw1"
-}
 
-convert -size "$imagewidth"x"$imageheight" xc:none -fill black -draw "path '$draw1'" /tmp/polyfy1.png #make the matte
-#cut out the first polygon from the original image and negate it
-convert $file /tmp/polyfy1.png -alpha set -compose Dstin -composite $negate /tmp/polyfy2.png 
-borderzero #check if borderwidth is zero
-$step3 #option to place second polygon underneath the first
+convert -size "$imagewidth"x"$imageheight" xc:none -fill black -draw "path '$path1'" /tmp/polyfy1.png #make the matte
+convert $file /tmp/polyfy1.png -alpha set -compose Dstin -composite -channel ${channel//[^rgb]/} -negate /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
+borderoptions #check how to draw borders
 convert -gravity center $file /tmp/polyfy2.png -compose Over -composite  /tmp/polyfy3.png #combine the first polygon and the original image
-convert /tmp/polyfy3.png -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$draw'" $directory/$filename-polyfy.$format #draw the borders and output the finished image
+convert /tmp/polyfy3.png -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$path'" $directory/$filename-polyfy.$format #draw borders and output the finished image
 
-#rm -f /tmp/polyfy1.$format #remove temporary files
+rm -f /tmp/polyfy{1,2,3}.png #remove temporary files
 
 echo "file saved to "$directory"/"$filename"-polify."$format"" #output where the finished image was saved
 
