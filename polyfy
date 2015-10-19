@@ -7,9 +7,10 @@ usage () {
                 echo "Incorrect use";
                 echo "polyfy /path/to/file <options>";
                 echo "Available options";
-                echo "b<number> - width of border (default: b15)";
-                echo "s<number> - size of triangle as a fraction of image height (default: s3)";
-                echo "<shape> - triangle, square, or diamond";
+                echo "-b <number> - width of border (default: 10)";
+                echo "-s <number> - size of triangle as a fraction of image height (default: 3)";
+                echo "triangle|diamond|square - what shape to draw";
+                echo "over|under|none - if the second polygon is drawn over or under the first (default: over)";
                 exit 1;
 }
 
@@ -67,11 +68,11 @@ borderzero () {
 
 #variables
 bordercolor="white"
-borderwidth="15"
+borderwidth="10"
 channel="rgb"
 size="3"
 file="$1"; shift
-shape="triangle"
+shape="diamond"
 
 #get file name
 if [ ! -f $file ]; then
