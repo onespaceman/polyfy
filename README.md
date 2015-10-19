@@ -1,6 +1,11 @@
 # polyfy
 add cool polygons to any wallpaper
 
+#####samples:
+![](https://github.com/onespaceman/polyfy/blob/master/samples/sea-polyfy.jpg)
+![](https://github.com/onespaceman/polyfy/blob/master/samples/forest-polyfy.jpg)
+![](https://github.com/onespaceman/polyfy/blob/master/samples/grass-polyfy.jpg)
+
 #####usage:
 ```
 chmod +x polyfy  
@@ -30,4 +35,4 @@ polyfy with a diamond | negate the blue and red channels | with the polygon's si
 imagemagick
 
 #####roadmap:
-* More shapes if I can figure out the math
+* more shapes if I can figure out the math
