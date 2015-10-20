@@ -103,7 +103,7 @@ do
                         shift
                         ;;
                 -b|--borderwidth)
-             bash multiple if           borderwidth="$2"
+                        borderwidth="$2"
                         shift 2
                         ;;
                 -s|--size)
@@ -133,7 +133,6 @@ done
 $shape #calls chosen shape function
 
 #conversion with imagemagick
-
 convert -size "$imagewidth"x"$imageheight" xc:none -fill black -draw "path '$path1'" /tmp/polyfy1.png #make the matte
 convert $file /tmp/polyfy1.png -alpha set -compose Dstin -composite -channel ${channel//[^rgb]/} -negate /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
 borderoptions #check how to draw borders
