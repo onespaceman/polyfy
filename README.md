@@ -33,7 +33,8 @@ polyfy with a diamond | negate the blue and red channels | with the polygon's si
 
 
 #####dependencies:  
-imagemagick
+[ImageMagick](http://www.imagemagick.org/)
 
 #####roadmap:
 * more shapes if I can figure out the math
+* rotate shapes if I can figure out ImageMagick
