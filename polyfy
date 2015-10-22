@@ -4,7 +4,7 @@
 #check if file is specified
 
 usage () {
-        printf "Incorrect use \n polyfy /path/to/file /path/to/clipping <options> \n Available options \n -b <number> - width of border (default: 10) \n -s <number> - size of polygon as a fraction of image height (default: 3) \n --blur <number> - amount to blur image, excluding area inside polygon (default: 0) \n -r1 <number> - rotate polygon 1 \n -r2 <number - rotate polygon 2 \n triangle|diamond|square|circle - what shape to draw (default: diamond) \n over|under|none - if the second polygon is drawn over or under the first (default: over)";
+        printf "Incorrect use \n polyfy /path/to/file /path/to/clipping <options> \n Available options \n -b <number> - width of border (default: 10) \n -s <number> - size of polygon as a fraction of image height (default: 3) \n --blur <number> - amount to blur image, excluding area inside polygon (default: 0) \n -r1 <number> - rotate polygon 1 \n -r2 <number - rotate polygon 2 \n triangle|diamond|square|circle - what shape to draw (default: diamond) \n over|under|none - if the second polygon is drawn over or under the first (default: over)\n";
                 exit 0;
 }
 
@@ -50,7 +50,7 @@ blur="0x0"
 #get file, test if it exists, and get info
 file="$1"; shift
 
-if [ ! -f $file ]; then
+if [ ! -f $file ] || [ -z $file ]; then
         usage
 else
         if [ ! -f $1 ]; then
@@ -117,7 +117,7 @@ $shape #calls chosen shape function
 
 #conversion with imagemagick
 convert -size "$length"x"$height" xc:none -fill black -draw "$path1" -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png #make the matte
-convert $file2 /tmp/polyfy1.png -gravity center -alpha set -compose Dstin -composite -channel $channel -negate -trim +repage /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
+convert $file /tmp/polyfy1.png -gravity center -alpha set -compose Dstin -composite -channel $channel -negate -trim +repage /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
 
 if [ $borderwidth -ne 0 ]; then #check if border is not 0
         convert -size "$length"x"$height" xc:none -stroke $bordercolor -strokewidth $borderwidth -fill none -draw "$path1" -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png #draw the border
