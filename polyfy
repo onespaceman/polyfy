@@ -6,7 +6,7 @@
 usage () {
         printf "Usage: polyfy /path/to/file /path/to/clipping <options> \n\
 Available options: \n\
-r|g|b or any combination of the three - which color channels to negate \n\
+r|g|b or any combination of the three - which color channels to negate (default: none) \n\
 triangle|diamond|square|circle - what shape to draw (default: diamond) \n\
 over|under|none - if the second polygon is drawn over or under the first (default: over) \n\
 -b <number> - width of border (default: 10) \n\
@@ -53,18 +53,18 @@ channel="rgb"
 size="3"
 shape="diamond"
 border2="over"
+file="${1//~/$HOME}"; shift #get file
 
-#get file, test if it exists, and get info
-file="$1"; shift
-
-if [ ! -f $file ]; then
+if [ ! -f $file ]; then #check if file exists
         usage
 else
-        if [ ! -f $1 ]; then
-                file2="$file"
-        else
+
+        if (( $# != 0 ))  && [ -f $1 ]; then #check if second file is given
                 file2="$1"; shift
+        else
+                file2="$file"
         fi
+
         filename=$(basename ${file%.*})
         format=$(basename ${file##*.})
         directory=$(dirname $file)
