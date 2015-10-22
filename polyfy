@@ -101,6 +101,10 @@ do
                         blur="-blur 0x$2"
                         shift 2
                         ;;
+                --saturation)
+                        saturation="-modulate 100,$2"
+                        shift 2
+                        ;;
                 -r|--rotate)
                         rotation1="$2"
                         rotation2="$3"
@@ -149,7 +153,7 @@ if [ $borderwidth -ne 0 ]; then #check if border is not 0
         esac
 fi
 
-convert -gravity center $file $blur /tmp/polyfy2.png -compose Over -composite $filename #combine clipping and original image, apply blur
+convert -gravity center $file $blur $saturation /tmp/polyfy2.png -compose Over -composite $filename #combine clipping and original image, apply blur and saturation
 
 rm -f /tmp/polyfy{1,2}.png #remove temporary files
 
