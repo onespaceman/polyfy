@@ -58,7 +58,7 @@ else
         else
                 file2="$1"; shift
         fi
-        filename=$(basename ${file%.*})
+        filename=$(basename ${file%.*})-polyfy
         format=$(basename ${file##*.})
         directory=$(dirname $file)
         imagewidth=$(identify -format "%w" $file)
@@ -93,6 +93,11 @@ do
                         rotation2="$2"
                         shift 2
                         ;;
+				--saveas)
+						filename=$(basename $2)
+						directory=$(dirname $2)
+						shift 2
+						;;
                 triangle|square|diamond|circle)
                         shape="$1"
                         shift
@@ -136,9 +141,9 @@ if [ $borderwidth -ne 0 ]; then #check if border is not 0
         esac
 fi
 
-convert -gravity center $file -blur $blur /tmp/polyfy2.png -compose Over -composite $directory/$filename-polyfy.$format #combine clipping and original image, apply blur
+convert -gravity center $file -blur $blur /tmp/polyfy2.png -compose Over -composite $directory/$filename.$format #combine clipping and original image, apply blur
 
 rm -f /tmp/polyfy{1,2}.png #remove temporary files
 
-echo "file saved to "$directory"/"$filename"-polify."$format"" #output where the finished image was saved
+echo "file saved to "$directory"/"$filename"."$format"" #output where the finished image was saved
 
