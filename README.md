@@ -18,6 +18,8 @@ polyfy /path/to/image <options>
 `traingle|square|diamond>` Draw a triangle, square, or diamond (default: diamond)  
 `-s or --size <size>` Change the polygon size as a fraction of the image's height (default: 3 #this means the polygon side length is 1/3 of the image's height)  
 `-b or --borderwidth <borderwidth>` Change the border width of the polygons (default: 10)  
+`-r1 or --rotation1 <degrees>` Rotate the first polygon  
+`-r2 or --rotation2 <degrees>` Rotate the second polygon  
 `over|under|none` Choose if the second polygon is drawn over the first, under, or not at all (default: over)
 
 
@@ -37,4 +39,3 @@ polyfy with a diamond | negate the blue and red channels | with the polygon's si
 
 #####roadmap:
 * more shapes if I can figure out the math
-* rotate shapes if I can figure out ImageMagick
