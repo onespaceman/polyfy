@@ -4,73 +4,38 @@
 #check if file is specified
 
 usage () {
-                echo "Incorrect use";
-                echo "polyfy /path/to/file <options>";
-                echo "Available options";
-                echo "-b <number> - width of border (default: 10)";
-                echo "-s <number> - size of polygon as a fraction of image height (default: 3)";
-                echo "triangle|diamond|square - what shape to draw (default: diamond)";
-                echo "over|under|none - if the second polygon is drawn over or under the first (default: over)";
+                printf "Incorrect use \n polyfy /path/to/file /path/to/clipping <options> \n Available options \n -b <number> - width of border (default: 10) \n -s <number> - size of polygon as a fraction of image height (default: 3) \n -r1 <number> - rotate polygon 1 \n -r2 <number - rotate polygon 2 \n triangle|diamond|square|circle - what shape to draw (default: diamond) \n over|under|none - if the second polygon is drawn over or under the first (default: over)";
                 exit 0;
-}
-
-points () {
-        point1=$((imagewidth/2));
-        pointa=$((imageheight/2-height/2));
-        point2=$((imagewidth/2-length/2));
-        pointb=$((imageheight/2+height/2));
-        point3=$((imagewidth/2+length/2));
-        pointc=$((imageheight/2));
 }
 
 triangle () {
         length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
         height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1+0.5)}');
-        points;
-        path1="M $point1,$pointa $point2,$pointb $point3,$pointb Z";
-        path2="M $point1,$pointb $point2,$pointa $point3,$pointa Z";
+        path1="polygon $((length/2)),0 $length,$height 0,$height";
+        rotate1="0";
+        rotate2="180";
 }
 
 square () {
         length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
         height=$length;
-        points;
-        pluslength=$(echo "sqrt(($length^2)*2)/2" | bc -l | awk '{print int($1+0.5)}');
-        point4=$((point1+pluslength));
-        point5=$((point1-pluslength));
-        pointd=$((pointc+pluslength));
-        pointe=$((pointc-pluslength));
-        path1="M $point2,$pointb $point2,$pointa $point3,$pointa $point3,$pointb Z";
-        path2="M $point4,$pointc $point1,$pointd $point5,$pointc $point1,$pointe Z";
+        path1="rectangle 0,0 $length,$height";
+        rotate1="0";
+        rotate2="45";
 }
 
 diamond () {
-        square
-        path1="M $point4,$pointc $point1,$pointd $point5,$pointc $point1,$pointe Z";
-        path2="M $point2,$pointb $point2,$pointa $point3,$pointa $point3,$pointb Z";
+        square;
+        rotate1="45";
 }
 
-borderoptions () {
-        if [ $borderwidth -eq 0 ]; then
-                path1=""
-                path2=""
-                path=""
-        else
-                case $border2 in
-                        over)
-                                path="$path1 $path2"
-                                ;;
-                        under)
-                                convert $file -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$path2'" /tmp/polyfy1.png
-                                path="$path1"
-                                file="/tmp/polyfy1.png"
-                                ;;
-                        none)
-                                path="$path1"
-                                ;;
-                esac
 
-        fi
+circle () {
+        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
+        height=$length;
+        path1="circle $((length/2)),$((height/2)) $((length/2)),$borderwidth";
+        rotate1="0"
+        rotate2="0"
 }
 
 #default variables
@@ -87,6 +52,11 @@ file="$1"; shift
 if [ ! -f $file ]; then
         usage
 else
+        if [ ! -f $1 ]; then
+                file2="$file"
+        else
+                file2="$1"; shift
+        fi
         filename=$(basename ${file%.*})
         format=$(basename ${file##*.})
         directory=$(dirname $file)
@@ -99,18 +69,26 @@ for i in "$@"
 do
         case $1 in
                 r|g|b|rg|rb|gr|br|gb|bg|rgb|rbg|brg|bgr|grb|gbr)
-                        channel="$1"
+                        channel="${1//[^rgb]/}"
                         shift
                         ;;
                 -b|--borderwidth)
-                        borderwidth="$2"
+                        borderwidth="${2//[^0-9]/}"
                         shift 2
                         ;;
                 -s|--size)
                         size="$2"
                         shift 2
                         ;;
-                triangle|square|diamond)
+                -r1|--rotation1)
+                        rotation1="$2"
+                        shift 2
+                        ;;
+                -r2|--rotation2)
+                        rotation2="$2"
+                        shift 2
+                        ;;
+                triangle|square|diamond|circle)
                         shape="$1"
                         shift
                         ;;
@@ -133,13 +111,29 @@ done
 $shape #calls chosen shape function
 
 #conversion with imagemagick
-convert -size "$imagewidth"x"$imageheight" xc:none -fill black -draw "path '$path1'" /tmp/polyfy1.png #make the matte
-convert $file /tmp/polyfy1.png -alpha set -compose Dstin -composite -channel ${channel//[^rgb]/} -negate /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
-borderoptions #check how to draw borders
-convert -gravity center $file /tmp/polyfy2.png -compose Over -composite  /tmp/polyfy3.png #combine the first polygon and the original image
-convert /tmp/polyfy3.png -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$path'" $directory/$filename-polyfy.$format #draw borders and output the finished image
+convert -size "$length"x"$height" xc:none -fill black -draw "$path1" -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png #make the matte
+convert $file2 /tmp/polyfy1.png -gravity center -alpha set -compose Dstin -composite -channel $channel -negate -trim +repage /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
 
-rm -f /tmp/polyfy{1,2,3}.png #remove temporary files
+if [ $borderwidth -ne 0 ]; then #check if border is not 0
+        convert -size "$length"x"$height" xc:none -stroke $bordercolor -strokewidth $borderwidth -fill none -draw "$path1" -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png #draw the border
+        case $border2 in
+                over)
+                        convert -gravity center -background none /tmp/polyfy1.png -rotate $((rotation2+rotate2)) /tmp/polyfy1.png -compose Over -composite /tmp/polyfy1.png #combine the border and rotated border
+                        convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png -compose DstOver -composite /tmp/polyfy2.png #place borders over clipping
+                        ;;
+                under)
+                        convert -gravity center -background none /tmp/polyfy1.png -rotate $((rotation2+rotate2)) /tmp/polyfy2.png -compose Over -composite /tmp/polyfy2.png #place rotated border under clipping 
+                        convert -gravity center -background none /tmp/polyfy2.png /tmp/polyfy1.png -compose Over -composite /tmp/polyfy2.png #place border over clipping
+                        ;;
+                none)
+                        convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png -compose DstOver -composite /tmp/polyfy2.png #place border over clipping 
+                        ;;
+        esac
+fi
+
+convert -gravity center $file /tmp/polyfy2.png -compose Over -composite $directory/$filename-polyfy.$format 
+
+rm -f /tmp/polyfy{1,2}.png #remove temporary files
 
 echo "file saved to "$directory"/"$filename"-polify."$format"" #output where the finished image was saved
 
