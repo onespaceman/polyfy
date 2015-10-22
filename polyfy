@@ -9,6 +9,7 @@ usage () {
                 echo "Available options";
                 echo "-b <number> - width of border (default: 10)";
                 echo "-s <number> - size of polygon as a fraction of image height (default: 3)";
+				echo "--blur <number> - amount to blur image, excluding area inside polygon (default: 0)";
                 echo "triangle|diamond|square - what shape to draw (default: diamond)";
                 echo "over|under|none - if the second polygon is drawn over or under the first (default: over)";
                 exit 0;
@@ -80,6 +81,7 @@ channel="rgb"
 size="3"
 shape="diamond"
 border2="over"
+blur="0x0"
 
 #get file, test if it exists, and get info
 file="$1"; shift
@@ -110,6 +112,10 @@ do
                         size="$2"
                         shift 2
                         ;;
+				--blur)
+						blur="0x$2"
+						shift 2
+						;;
                 triangle|square|diamond)
                         shape="$1"
                         shift
@@ -134,9 +140,9 @@ $shape #calls chosen shape function
 
 #conversion with imagemagick
 convert -size "$imagewidth"x"$imageheight" xc:none -fill black -draw "path '$path1'" /tmp/polyfy1.png #make the matte
-convert $file /tmp/polyfy1.png -alpha set -compose Dstin -composite -channel ${channel//[^rgb]/} -negate /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
+convert $file /tmp/polyfy1.png -alpha set  -compose Dstin -composite -channel ${channel//[^rgb]/} -negate /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
 borderoptions #check how to draw borders
-convert -gravity center $file /tmp/polyfy2.png -compose Over -composite  /tmp/polyfy3.png #combine the first polygon and the original image
+convert -gravity center $file -blur $blur /tmp/polyfy2.png -compose Over -composite /tmp/polyfy3.png #combine the first polygon and the original image
 convert /tmp/polyfy3.png -stroke $bordercolor -strokewidth ${borderwidth//[^0-9]/} -fill none -draw "path '$path'" $directory/$filename-polyfy.$format #draw borders and output the finished image
 
 rm -f /tmp/polyfy{1,2,3}.png #remove temporary files
