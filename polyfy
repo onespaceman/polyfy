@@ -151,7 +151,7 @@ fi
 
 convert -gravity center $file $blur /tmp/polyfy2.png -compose Over -composite $filename #combine clipping and original image, apply blur
 
-#rm -f /tmp/polyfy{1,2}.png #remove temporary files
+rm -f /tmp/polyfy{1,2}.png #remove temporary files
 
 echo "file saved to $filename" #output where the finished image was saved
 
