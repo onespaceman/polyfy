@@ -4,7 +4,7 @@
 #check if file is specified
 
 usage () {
-                printf "Incorrect use \n polyfy /path/to/file /path/to/clipping <options> \n Available options \n -b <number> - width of border (default: 10) \n -s <number> - size of polygon as a fraction of image height (default: 3) \n -r1 <number> - rotate polygon 1 \n -r2 <number - rotate polygon 2 \n triangle|diamond|square|circle - what shape to draw (default: diamond) \n over|under|none - if the second polygon is drawn over or under the first (default: over)";
+        printf "Incorrect use \n polyfy /path/to/file /path/to/clipping <options> \n Available options \n -b <number> - width of border (default: 10) \n -s <number> - size of polygon as a fraction of image height (default: 3) \n --blur <number> - amount to blur image, excluding area inside polygon (default: 0) \n -r1 <number> - rotate polygon 1 \n -r2 <number - rotate polygon 2 \n triangle|diamond|square|circle - what shape to draw (default: diamond) \n over|under|none - if the second polygon is drawn over or under the first (default: over)";
                 exit 0;
 }
 
@@ -45,6 +45,7 @@ channel="rgb"
 size="3"
 shape="diamond"
 border2="over"
+blur="0x0"
 
 #get file, test if it exists, and get info
 file="$1"; shift
@@ -78,6 +79,10 @@ do
                         ;;
                 -s|--size)
                         size="$2"
+                        shift 2
+                        ;;
+                --blur)
+                        blur="0x$2"
                         shift 2
                         ;;
                 -r1|--rotation1)
@@ -131,7 +136,7 @@ if [ $borderwidth -ne 0 ]; then #check if border is not 0
         esac
 fi
 
-convert -gravity center $file /tmp/polyfy2.png -compose Over -composite $directory/$filename-polyfy.$format 
+convert -gravity center $file -blur $blur /tmp/polyfy2.png -compose Over -composite $directory/$filename-polyfy.$format #combine clipping and original image, apply blur
 
 rm -f /tmp/polyfy{1,2}.png #remove temporary files
 
