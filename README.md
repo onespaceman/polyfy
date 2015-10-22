@@ -14,7 +14,7 @@ polyfy /path/to/image <options>
 ```
 
 #####options:
-`r|g|b` Choose r, g, b, or any combination of the three ( bg rg ) to control which colors turn negative (default: rgb)
+`r|g|b` Choose r, g, b, or any combination of the three ( bg rg ) to control which colors turn negative (default: none)
 
 `traingle|square|diamond|circle` Draw a triangle, square, diamond or circle (default: diamond)
 
@@ -24,9 +24,7 @@ polyfy /path/to/image <options>
 
 `--blur <number>` Blur the background outside the polygon
 
-`-r1 or --rotation1 <degrees>` Rotate the first polygon
-
-`-r2 or --rotation2 <degrees>` Rotate the second polygon
+`-r or --rotate <degrees1> <degrees2>` Rotate the first polygon (degrees1) and second polygon (degrees2)
 
 `over|under|none` Choose if the second polygon is drawn over the first, under, or not at all (default: over)
 

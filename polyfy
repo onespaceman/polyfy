@@ -8,7 +8,7 @@ usage () {
 Available options: \n\
 r|g|b or any combination of the three - which color channels to negate (default: none) \n\
 triangle|diamond|square|circle - what shape to draw (default: diamond) \n\
-over|under|none - if the second polygon is drawn over or under the first (default: over) \n\
+over|under|none - draw the second polygon over or under the first, or not at all (default: over) \n\
 -b <number> - width of border (default: 10) \n\
 -s <number> - size of polygon as a fraction of image height (default: 3) \n\
 --blur <number> - amount to blur image, excluding area inside polygon (default: 0) \n\
@@ -60,7 +60,7 @@ if [ ! -f $file ]; then #check if file exists
 else
 
         if (( $# != 0 ))  && [ -f $1 ]; then #check if second file is given
-                file2="$1"; shift
+                file2="${1//~/$HOME}"; shift
         else
                 file2="$file"
         fi
