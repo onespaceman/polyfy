@@ -11,7 +11,6 @@ OPTIONS=$(getopt -o $(echo $SHORT) \
 bordercolor="white"
 borderwidth="10"
 channel="rgb"
-negate=""
 size="3"
 shape="diamond"
 border2="over"
@@ -50,7 +49,7 @@ while true; do
             borderwidth="$2"
             shift 2 ;;
         --border-color)
-            borderwidth="$2"
+            bordercolor="$2"
             shift 2 ;;
         -h|--help)
             echo "
@@ -69,14 +68,22 @@ $(tput bold)OPTIONS$(tput sgr0)
 
     $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
         Specify the rotations done on the first and second polygon. You are to
-        split the degrees with a ',' delimiter.
+        split the degrees with a ',' delimiter. These values extend the
+        exisiting (default) values.
+
+            | Shape    | first | second |
+            |---------------------------|
+            | Diamond  | 45    | *      |
+            | Triangle | 0     | 180    |
+            | Square   | 0     | 45     |
+            | Circle   | 0     | 0      |
 
     $(tput bold)--border-width$(tput sgr0) <number>
         The border width.
 
         The default value is 10.
 
-    $(tput bold)--border-color$(tput sgr0) <number>
+    $(tput bold)--border-color$(tput sgr0) <color>
         The color of the border.
 
         The default calue is white.
@@ -139,14 +146,12 @@ $(tput bold)OPTIONS$(tput sgr0)
 done
 
 # Update the negate variables to fit the convert syntax.
-negate="-channel $negate -negate"
+[[ -n $negate ]] && negate="-channel $negate -negate"
 
 [[ -f ${1} ]] && {
-    file="${1//~/$HOME}"
-    shift
+    file="${1//~/$HOME}"; shift
     [[ -f ${1} ]] && {
-        file2="${1//~/$HOME}"
-        shift
+        file2="${1//~/$HOME}"; shift
     } || {
         file2=$file
     }
@@ -219,7 +224,9 @@ convert $file2 /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
                 convert -gravity center -background none /tmp/polyfy1.png \
                         -rotate $((rotation2+rotate2)) /tmp/polyfy1.png \
                         -compose Over -composite /tmp/polyfy1.png
-                convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png -compose DstOver -composite /tmp/polyfy2.png #place borders over clipping
+                # Place borders over clipping
+                convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png \
+                        -compose DstOver -composite /tmp/polyfy2.png
                 ;;
             under)
                 # Place rotated border under clipping
