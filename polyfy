@@ -1,157 +1,248 @@
 #! /bin/bash
 
-#adds totally awesome polygons to any wallpaper
-#check if file is specified
+SHORT="hr:s:o:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,red,blue,green,rgb,shape:"
+OPTIONS=$(getopt -o $(echo $SHORT) \
+                 -l $(echo $LONG | sed 's/ //g') \
+                 -n "$0" \
+                 -- "$@")
 
-usage () {
-        printf "Usage: polyfy /path/to/file /path/to/clipping <options> \n\
-Available options: \n\
-r|g|b or any combination of the three - which color channels to negate (default: none) \n\
-triangle|diamond|square|circle - what shape to draw (default: diamond) \n\
-over|under|none - draw the second polygon over or under the first, or not at all (default: over) \n\
--b <number> - width of border (default: 10) \n\
--s <number> - size of polygon as a fraction of image height (default: 3) \n\
---blur <number> - amount to blur image, excluding area inside polygon (default: 0) \n\
--r or --rotate <degree1> <degrees2> - amount to rotate polygon 1 (degrees1) and polygon 2 (degrees2) \n";
-                exit 0;
-}
-
-triangle () {
-        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-        height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1+0.5)}');
-        path1="polygon $((length/2)),0 $length,$height 0,$height";
-        rotate1="0";
-        rotate2="180";
-}
-
-square () {
-        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-        height=$length;
-        path1="rectangle 0,0 $length,$height";
-        rotate1="0";
-        rotate2="45";
-}
-
-diamond () {
-        square;
-        rotate1="45";
-}
-
-
-circle () {
-        length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-        height=$length;
-        path1="circle $((length/2)),$((height/2)) $((length/2)),$borderwidth";
-        rotate1="0"
-        rotate2="0"
-}
-
-#default variables
+# Default variables
 bordercolor="white"
 borderwidth="10"
 channel="rgb"
+negate=""
 size="3"
 shape="diamond"
 border2="over"
-file="${1//~/$HOME}"; shift #get file
 
-if [ ! -f $file ]; then #check if file exists
-        usage
-else
+while true; do
+    case "$1" in
+        --red)
+            [[ ! $negate =~ "r" ]] && negate="${negate}r"
+            shift ;;
+        --green)
+            [[ ! $negate =~ "g" ]] && negate="${negate}g"
+            shift ;;
+        --blue)
+            [[ ! $negate =~ "b" ]] && negate="${negate}b"
+            shift ;;
+        --rgb)
+            negate="rgb"
+            shift ;;
+        -r|--rotate)
+            rotation1="${2%,*}"
+            rotation2="${2#*,}"
+            shift 2 ;;
+        -o|--overlay)
+            border2="$2"
+            shift 2 ;;
+        --blur)
+            blur="-blur $2"
+            shift 2 ;;
+        --size)
+            size="$2"
+            shift 2 ;;
+        -s|--shape)
+            shape="$2"
+            shift 2 ;;
+        --border-width)
+            borderwidth="$2"
+            shift 2 ;;
+        --border-color)
+            borderwidth="$2"
+            shift 2 ;;
+        -h|--help)
+            echo "
+$(tput bold)NAME$(tput sgr0)
+    Polyfy - Add cool polygons to any wallpaper
 
-        if (( $# != 0 ))  && [ -f $1 ]; then #check if second file is given
-                file2="${1//~/$HOME}"; shift
-        else
-                file2="$file"
-        fi
+$(tput bold)SYNOPSIS$(tput sgr0)
+    polyfy $(tput bold)[options]$(tput sgr0) $(tput bold)[file...]$(tput sgr0)
 
-        filename=$(basename ${file%.*})
-        format=$(basename ${file##*.})
-        directory=$(dirname $file)
-        imagewidth=$(identify -format "%w" $file)
-        imageheight=$(identify -format "%h" $file)
-        
-        #add number to filename if output file already exists
-        if [[ -e $directory/$filename-polyfy.$format ]] ; then
-                i=2
-                while [[ -e $directory/$filename-polyfy"$i".$format ]] ; do
-                        let i++
-                done
-        fi
-        filename=$directory/$filename-polyfy"$i".$format
-fi
+$(tput bold)DESCRIPTION$(tput sgr0)
+    A short description about it.
 
-#get options
-for i in "$@"
-do
-        case $1 in
-                r|g|b|rg|rb|gr|br|gb|bg|rgb|rbg|brg|bgr|grb|gbr)
-                        negate="-channel ${1//[^rgb]/} -negate"
-                        shift
-                        ;;
-                -b|--borderwidth)
-                        borderwidth="${2//[^0-9]/}"
-                        shift 2
-                        ;;
-                -s|--size)
-                        size="$2"
-                        shift 2
-                        ;;
-                --blur)
-                        blur="-blur 0x$2"
-                        shift 2
-                        ;;
-                -r|--rotate)
-                        rotation1="$2"
-                        rotation2="$3"
-                        shift 3
-                        ;;
-                triangle|square|diamond|circle)
-                        shape="$1"
-                        shift
-                        ;;
-                over)
-                        shift
-                        ;;
-                under|behind)
-                        border2="under"
-                        shift
-                        ;;
-                none)
-                        border2="none"
-                        shift
-                        ;;
-                *)
-                        ;;
-        esac
+$(tput bold)OPTIONS$(tput sgr0)
+    $(tput bold)-h, --help $(tput sgr0)
+        You're looking at it.
+
+    $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
+        Specify the rotations done on the first and second polygon. You are to
+        split the degrees with a ',' delimiter.
+
+    $(tput bold)--border-width$(tput sgr0) <number>
+        The border width.
+
+        The default value is 10.
+
+    $(tput bold)--border-color$(tput sgr0) <number>
+        The color of the border.
+
+        The default calue is white.
+
+    $(tput bold)--blur$(tput sgr0) <radius>x<sigma>
+        Amount to blur the image excluding the area inside polygon. You are to
+        split the values with a 'x'. The important setting in the above is the
+        second sigma value. It can be thought of as an approximation of just
+        how much your want the image to 'spread' or blur, in pixels. Think of
+        it as the size of the brush used to blur the image. The numbers are
+        floating point values, so you can use a very small value like '0.5'.
+
+        The first value radius, is also important as it controls how big an
+        area the operator should look at when spreading pixels. This value
+        should typically be either '0' or at a minimum double that of the sigma.
+
+        The default is 0x0 for every shape.
+
+    $(tput bold)--size$(tput sgr0) <number>
+        The size of polygon as a fraction of image height.
+
+        The default value is 3.
+
+    $(tput bold)-s, --shape$(tput sgr0) <type>
+        What shape should be drawn. You can find the default values of every
+        shape in the $(tput bold)--rotate$(tput sgr0) section.
+        The available shapes are: Diamond, square, circle, triangle.
+
+        By default the shape will be a diamond.
+
+    $(tput bold)--red, --blue, --green$(tput sgr0)
+        Specify which color channels to negate. None of these flags take any
+        argument and can be specified in any sequence.
+
+            --red --blue --green
+            --blue --green
+            --red
+
+        Alternatively you can also use $(tput bold)--rgb$(tput sgr0) to negate
+        all the channels. This is only shorthand for specify all the flags seperately.
+
+        By default there will be no negated channels.
+
+    $(tput bold)-o, --overlay$(tput sgr0) <type>
+        Draw the second polygon over or under the first, or not at all.
+
+        | Type    | Description                                 |
+        |-------------------------------------------------------|
+        | Under   | Draw a second polying beneath the first one |
+        | Over    | Draw a second polygon over the first one    |
+        | None    | Don't draw a second polygon                 |
+
+        The default will be 'over'.
+            "
+            exit  ;;
+        --) shift
+            break ;;
+        * ) break ;;
+    esac
 done
 
-$shape #calls chosen shape function
+# Update the negate variables to fit the convert syntax.
+negate="-channel $negate -negate"
 
-#conversion with imagemagick
-convert -size "$length"x"$height" xc:none -fill black -draw "$path1" -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png #make the matte
-convert $file2 /tmp/polyfy1.png -gravity center -alpha set -compose Dstin -composite $negate -trim +repage /tmp/polyfy2.png #cut out the first polygon from the original image and negate it
+[[ -f ${1} ]] && {
+    file="${1//~/$HOME}"
+    shift
+    [[ -f ${1} ]] && {
+        file2="${1//~/$HOME}"
+        shift
+    } || {
+        file2=$file
+    }
+} || {
+    echo "You did not specify a file."
+    exit 0
+}
 
-if [ $borderwidth -ne 0 ]; then #check if border is not 0
-        convert -size "$length"x"$height" xc:none -stroke $bordercolor -strokewidth $borderwidth -fill none -draw "$path1" -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png #draw the border
-        case $border2 in
-                over)
-                        convert -gravity center -background none /tmp/polyfy1.png -rotate $((rotation2+rotate2)) /tmp/polyfy1.png -compose Over -composite /tmp/polyfy1.png #combine the border and rotated border
-                        convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png -compose DstOver -composite /tmp/polyfy2.png #place borders over clipping
-                        ;;
-                under)
-                        convert -gravity center -background none /tmp/polyfy1.png -rotate $((rotation2+rotate2)) /tmp/polyfy2.png -compose Over -composite /tmp/polyfy2.png #place rotated border under clipping 
-                        convert -gravity center -background none /tmp/polyfy2.png /tmp/polyfy1.png -compose Over -composite /tmp/polyfy2.png #place border over clipping
-                        ;;
-                none)
-                        convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png -compose DstOver -composite /tmp/polyfy2.png #place border over clipping 
-                        ;;
-        esac
-fi
+imageheight=$(identify -format "%h" $file)
+imagewidth=$(identify -format "%w" $file)
+directory=$(dirname $file)
+filename=$(basename ${file%.*})
+format=$(basename ${file##*.})
 
-convert -gravity center $file $blur /tmp/polyfy2.png -compose Over -composite $filename #combine clipping and original image, apply blur
+[[ -e $directory/$filename-polyfy.$format ]] && {
+    i=2
+    while [[ -e $directory/$filename-polyfy"$i".$format ]]; do
+        let i++
+    done
+}
+filename=$directory/$filename-polyfy"$i".$format
 
-rm -f /tmp/polyfy{1,2}.png #remove temporary files
+triangle() {
+    length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}')
+    height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1+0.5)}');
+    path1="polygon $((length/2)),0 $length,$height 0,$height";
+    rotate1="0";
+    rotate2="180";
+}
 
-echo "file saved to $filename" #output where the finished image was saved
+square() {
+    length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
+    height=$length;
+    path1="rectangle 0,0 $length,$height";
+    rotate1="0";
+    rotate2="45";
+}
 
+diamond () {
+    square;
+    rotate1="45";
+}
+
+circle () {
+    length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
+    height=$length;
+    path1="circle $((length/2)),$((height/2)) $((length/2)),$borderwidth";
+    rotate1="0"
+    rotate2="0"
+}
+
+$shape
+
+convert -size "$length"x"$height" xc:none -fill black -draw "$path1" \
+        -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png
+
+# Cut out the first polygon from the original image and negate it.
+convert $file2 /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
+        -composite $negate -trim +repage /tmp/polyfy2.png
+
+[[ $borderwidth -ne 0 ]] && {
+    # Draw the border.
+    convert -size "$length"x"$height" xc:none -stroke $bordercolor \
+            -strokewidth $borderwidth -fill none -draw "$path1" -background none \
+            -rotate $((rotation1+rotate1)) /tmp/polyfy1.png
+
+    case $border2 in
+            over)
+                # Combine the border and rotated border.
+                convert -gravity center -background none /tmp/polyfy1.png \
+                        -rotate $((rotation2+rotate2)) /tmp/polyfy1.png \
+                        -compose Over -composite /tmp/polyfy1.png
+                convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png -compose DstOver -composite /tmp/polyfy2.png #place borders over clipping
+                ;;
+            under)
+                # Place rotated border under clipping
+                convert -gravity center -background none /tmp/polyfy1.png \
+                        -rotate $((rotation2+rotate2)) /tmp/polyfy2.png \
+                        -compose Over -composite /tmp/polyfy2.png
+                # Place border over clipping
+                convert -gravity center -background none /tmp/polyfy2.png \
+                        /tmp/polyfy1.png -compose Over -composite /tmp/polyfy2.png
+                ;;
+            none)
+                # Place border over clipping.
+                convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png \
+                        -compose DstOver -composite /tmp/polyfy2.png
+                ;;
+    esac
+}
+
+# Combine clipping and original image, apply blur
+convert -gravity center $file $blur /tmp/polyfy2.png -compose Over -composite $filename
+
+# Remove temporary files.
+rm -f /tmp/polyfy{1,2}.png
+
+# Tell the user where and what.
+echo "file saved to $filename"
