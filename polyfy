@@ -8,12 +8,13 @@ OPTIONS=$(getopt -o $(echo $SHORT) \
                  -- "$@")
 
 # Default variables
-bordercolor="white"
-borderwidth="10"
+border_c="white"
+shape="diamond"
+overlay="over"
+border_w="10"
 channel="rgb"
 size="3"
-shape="diamond"
-border2="over"
+dup_c=2
 
 while true; do
     case "$1" in
@@ -30,11 +31,11 @@ while true; do
             negate="rgb"
             shift ;;
         -r|--rotate)
-            rotation1="${2%,*}"
-            rotation2="${2#*,}"
+            rotation_f="${2%,*}"
+            rotation_s="${2#*,}"
             shift 2 ;;
         -o|--overlay)
-            border2="$2"
+            overlay="$2"
             shift 2 ;;
         --blur)
             blur="-blur $2"
@@ -46,10 +47,10 @@ while true; do
             shape="$2"
             shift 2 ;;
         --border-width)
-            borderwidth="$2"
+            border_w="$2"
             shift 2 ;;
         --border-color)
-            bordercolor="$2"
+            border_c="$2"
             shift 2 ;;
         -h|--help)
             echo "
@@ -145,111 +146,104 @@ $(tput bold)OPTIONS$(tput sgr0)
     esac
 done
 
-# Update the negate variables to fit the convert syntax.
 [[ -n $negate ]] && negate="-channel $negate -negate"
-
 [[ -f ${1} ]] && {
-    file="${1//~/$HOME}"; shift
+    file_f="${1//~/$HOME}"; shift
     [[ -f ${1} ]] && {
-        file2="${1//~/$HOME}"; shift
+        file_s="${1//~/$HOME}"; shift
     } || {
-        file2=$file
+        file_s=$file_f
     }
 } || {
     echo "You did not specify a file."
     exit 0
 }
 
-imageheight=$(identify -format "%h" $file)
-imagewidth=$(identify -format "%w" $file)
-directory=$(dirname $file)
-filename=$(basename ${file%.*})
-format=$(basename ${file##*.})
+image_h=$(identify -format "%h" $file_f)
+image_w=$(identify -format "%w" $file_f)
+directory=$(dirname $file_f)
+filename=$(basename ${file_f%.*})
+format=$(basename ${file_f##*.})
 
-[[ -e $directory/$filename-polyfy.$format ]] && {
-    i=2
-    while [[ -e $directory/$filename-polyfy"$i".$format ]]; do
-        let i++
-    done
-}
-filename=$directory/$filename-polyfy"$i".$format
+while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
+    let dup_c++
+done
+filename="$directory/$filename-polyfy"$dup_c".$format"
 
 triangle() {
-    length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}')
-    height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1+0.5)}');
-    path1="polygon $((length/2)),0 $length,$height 0,$height";
-    rotate1="0";
-    rotate2="180";
+    length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')
+    height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1 + 0.5)}')
+    rotate_s="180"
+    rotate_f="0"
+    path="polygon $((length / 2)),0 $length,$height 0,$height";
 }
 
 square() {
-    length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-    height=$length;
-    path1="rectangle 0,0 $length,$height";
-    rotate1="0";
-    rotate2="45";
+    length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')
+    height=$length
+    rotate_s="45"
+    rotate_f="0"
+    path="rectangle 0,0 $length,$height";
 }
 
-diamond () {
-    square;
-    rotate1="45";
+diamond() {
+    square
+    rotate_f="45"
 }
 
-circle () {
-    length=$(echo "$imageheight/${size//[^0-9-.]/}" | bc -l | awk '{print int($1+0.5)}');
-    height=$length;
-    path1="circle $((length/2)),$((height/2)) $((length/2)),$borderwidth";
-    rotate1="0"
-    rotate2="0"
+circle() {
+    length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}');
+    height=$length
+    rotate_s="0"
+    rotate_f="0"
+    path="circle $((length/2)),$((height/2)) $((length/2)),$border_w"
 }
 
+# Execute the assigned shape as function.
 $shape
 
-convert -size "$length"x"$height" xc:none -fill black -draw "$path1" \
-        -background none -rotate $((rotation1+rotate1)) /tmp/polyfy1.png
+convert -size "$length"x"$height" xc:none -fill black -draw "$path" \
+        -background none -rotate $((rotation_f+rotate_f)) /tmp/polyfy1.png
 
 # Cut out the first polygon from the original image and negate it.
-convert $file2 /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
+convert $file_s /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
         -composite $negate -trim +repage /tmp/polyfy2.png
 
-[[ $borderwidth -ne 0 ]] && {
+[[ $border_w -ne 0 ]] && {
     # Draw the border.
-    convert -size "$length"x"$height" xc:none -stroke $bordercolor \
-            -strokewidth $borderwidth -fill none -draw "$path1" -background none \
-            -rotate $((rotation1+rotate1)) /tmp/polyfy1.png
-
-    case $border2 in
-            over)
-                # Combine the border and rotated border.
-                convert -gravity center -background none /tmp/polyfy1.png \
-                        -rotate $((rotation2+rotate2)) /tmp/polyfy1.png \
-                        -compose Over -composite /tmp/polyfy1.png
-                # Place borders over clipping
-                convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png \
-                        -compose DstOver -composite /tmp/polyfy2.png
-                ;;
-            under)
-                # Place rotated border under clipping
-                convert -gravity center -background none /tmp/polyfy1.png \
-                        -rotate $((rotation2+rotate2)) /tmp/polyfy2.png \
-                        -compose Over -composite /tmp/polyfy2.png
-                # Place border over clipping
-                convert -gravity center -background none /tmp/polyfy2.png \
-                        /tmp/polyfy1.png -compose Over -composite /tmp/polyfy2.png
-                ;;
-            none)
-                # Place border over clipping.
-                convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png \
-                        -compose DstOver -composite /tmp/polyfy2.png
-                ;;
+    convert -size "$length"x"$height" xc:none -stroke $border_c \
+            -strokewidth $border_w -fill none -draw "$path" -background none \
+            -rotate $((rotation_f+rotate_f)) /tmp/polyfy1.png
+    case $overlay in
+        over)
+            # Combine the border and rotated border.
+            convert -gravity center -background none /tmp/polyfy1.png \
+                    -rotate $((rotation_s+rotate_s)) /tmp/polyfy1.png \
+                    -compose Over -composite /tmp/polyfy1.png
+            # Place borders over clipping
+            convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png \
+                    -compose DstOver -composite /tmp/polyfy2.png
+            ;;
+        under)
+            # Place rotated border under clipping
+            convert -gravity center -background none /tmp/polyfy1.png \
+                    -rotate $((rotation_s+rotate_s)) /tmp/polyfy2.png \
+                    -compose Over -composite /tmp/polyfy2.png
+            # Place border over clipping
+            convert -gravity center -background none /tmp/polyfy2.png \
+                    /tmp/polyfy1.png -compose Over -composite /tmp/polyfy2.png
+            ;;
+        none)
+            # Place border over clipping.
+            convert -gravity center /tmp/polyfy1.png /tmp/polyfy2.png \
+                    -compose DstOver -composite /tmp/polyfy2.png
+            ;;
     esac
 }
 
 # Combine clipping and original image, apply blur
-convert -gravity center $file $blur /tmp/polyfy2.png -compose Over -composite $filename
-
+convert -gravity center $file_f $blur /tmp/polyfy2.png -compose Over -composite $filename
 # Remove temporary files.
 rm -f /tmp/polyfy{1,2}.png
-
 # Tell the user where and what.
 echo "file saved to $filename"
