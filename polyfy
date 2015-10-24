@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 SHORT="hr:s:o:n:"
-LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:,saveas:"
 OPTIONS=$(getopt -o $(echo $SHORT) \
                  -l $(echo $LONG) \
                  -n "$0" \
@@ -61,6 +61,9 @@ while true; do
                 saturation="$2"
                 saturate="-modulate 100,$((saturation+100))"
             shift 2;;
+        --saveas)
+            saveas="$2"
+            shift 2 ;;
         -s|--shape)
             shape="$2"
             shift 2 ;;
@@ -76,7 +79,7 @@ $(tput bold)NAME$(tput sgr0)
     Polyfy - Add cool polygons to any wallpaper
 
 $(tput bold)SYNOPSIS$(tput sgr0)
-    polyfy $(tput bold)[options]$(tput sgr0) $(tput bold)[file...]$(tput sgr0)
+    $(tput bold)polyfy$(tput sgr0) [$(tput bold)options$(tput sgr0)] $(tput smul)file$(tput sgr0)
 
 $(tput bold)DESCRIPTION$(tput sgr0)
     Please visit the site to find help, examples, and more information.
@@ -85,6 +88,17 @@ $(tput bold)DESCRIPTION$(tput sgr0)
 $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)-h, --help $(tput sgr0)
         You're looking at it.
+
+    $(tput bold)--saveas$(tput sgr0) <filename>
+        Allows the output filename (and, optionally, directory) to be specified. The file
+        extension should not be given as part of `filename`.
+        If a directory is not specified, the file shall be saved in the current directory.
+		
+        The default filename is the input filename suffixed with \"-polyfy\".
+        The default directory is the current directory.
+		
+        If the filename that polyfy attempts to use already exists, a number shall
+        be affixed to the end, starting with \"2\".
 
     $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
         Specify the rotations done on the first and second polygon. Split the 
@@ -172,13 +186,25 @@ image_w=$(identify -format "%w" $file_f)
 format=$(basename ${file_f##*.})
 dup_c=""
 
-[[ -e $directory/$filename-polyfy.$format ]] && {
-    dup_c=2
-    while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
-        let dup_c++
-    done
-}
-filename="$directory/$filename-polyfy"$dup_c".$format"
+if [[ -z $saveas ]]; then
+    [[ -e $directory/$filename-polyfy.$format ]] && {
+        dup_c=2
+        while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
+            let dup_c++
+        done
+    }
+    filename="$directory/$filename-polyfy"$dup_c".$format"
+else
+    directory=$(dirname $saveas)
+    filename=$(basename ${saveas%.%})
+    [[ -e $directory/$filename.$format ]] && {
+        dup_c=2
+        while [[ -e $directory/$filename"$dup_c".$format ]]; do
+            let dup_c++
+        done
+    }
+    filename="$directory/$filename"$dup_c".$format"
+fi
 
 triangle() {
     length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')

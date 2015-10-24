@@ -17,6 +17,16 @@ polyfy /path/to/image <options>
 `-h or --help`
 Display the instructions
 
+`--saveas`
+Allows the output filename (and, optionally, directory) to be specified. The file extension should not be given as part of `filename`.                             
+If a directory is not specified, the file shall be saved in the current directory
+                                                                                 
+The default filename is the input filename suffixed with "-polyfy".            
+The default directory is the current directory.                                  
+                                                                                 
+If the filename that polyfy attempts to use already exists, a number shall       
+be affixed to the end, starting with "2".                                      
+
 `-r or --rotate <first> <second>`
 Specify the rotations done on the first and second polygon. Split the degrees with a ',' 
 
