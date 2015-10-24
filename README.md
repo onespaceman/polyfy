@@ -17,10 +17,20 @@ polyfy /path/to/image <options>
 `-h or --help`
 Display the instructions
 
+`--output <filename>`
+Allows the output filename (and, optionally, directory) to be specified. The file extension should not be given as part of `filename`.                             
+If a directory is not specified, the file shall be saved in the current directory
+                                                                                 
+The default filename is the input filename suffixed with "-polyfy".            
+The default directory is the current directory.                                  
+                                                                                 
+If the filename that polyfy attempts to use already exists, a number shall       
+be affixed to the end, starting with "2".                                      
+
 `-r or --rotate <first> <second>`
 Specify the rotations done on the first and second polygon. Split the degrees with a ',' 
 
-`--border-width <number>`
+`-b or --border-width <number>`
 The border width.
 
 The default value is 10.
@@ -82,7 +92,7 @@ polyfy path/to/image
 polyfy the image with the default options
 
 ```
-polyfy path/to/image -s diamond -n br --size 2 -b 20
+polyfy -s diamond -n br --size 2 -b 20 /path/to/image
 ```
 1. polyfy with a diamond
 2. negate the blue and red channels

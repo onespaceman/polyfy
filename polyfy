@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SHORT="hr:s:o:n:"
-LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:"
+SHORT="hr:s:o:n:b:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:,output:"
 OPTIONS=$(getopt -o $(echo $SHORT) \
                  -l $(echo $LONG) \
                  -n "$0" \
@@ -61,10 +61,13 @@ while true; do
                 saturation="$2"
                 saturate="-modulate 100,$((saturation+100))"
             shift 2;;
+        --output)
+            output="$2"
+            shift 2 ;;
         -s|--shape)
             shape="$2"
             shift 2 ;;
-        --border-width)
+        -b|--border-width)
             border_w="$2"
             shift 2 ;;
         --border-color)
@@ -76,7 +79,7 @@ $(tput bold)NAME$(tput sgr0)
     Polyfy - Add cool polygons to any wallpaper
 
 $(tput bold)SYNOPSIS$(tput sgr0)
-    polyfy $(tput bold)[options]$(tput sgr0) $(tput bold)[file...]$(tput sgr0)
+    $(tput bold)polyfy$(tput sgr0) [$(tput bold)options$(tput sgr0)] $(tput smul)file$(tput sgr0)
 
 $(tput bold)DESCRIPTION$(tput sgr0)
     Please visit the site to find help, examples, and more information.
@@ -86,11 +89,22 @@ $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)-h, --help $(tput sgr0)
         You're looking at it.
 
+    $(tput bold)--output$(tput sgr0) <filename>
+        Allows the output filename (and, optionally, directory) to be specified. The file
+        extension should not be given as part of `filename`.
+        If a directory is not specified, the file shall be saved in the current directory.
+		
+        The default filename is the input filename suffixed with \"-polyfy\".
+        The default directory is the current directory.
+		
+        If the filename that polyfy attempts to use already exists, a number shall
+        be affixed to the end, starting with \"2\".
+
     $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
         Specify the rotations done on the first and second polygon. Split the 
         degrees with a ',' 
 
-    $(tput bold)--border-width$(tput sgr0) <number>
+    $(tput bold)-b, --border-width$(tput sgr0) <number>
         The border width.
 
         The default value is 10.
@@ -172,13 +186,25 @@ image_w=$(identify -format "%w" $file_f)
 format=$(basename ${file_f##*.})
 dup_c=""
 
-[[ -e $directory/$filename-polyfy.$format ]] && {
-    dup_c=2
-    while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
-        let dup_c++
-    done
-}
-filename="$directory/$filename-polyfy"$dup_c".$format"
+if [[ -z $output ]]; then
+    [[ -e $directory/$filename-polyfy.$format ]] && {
+        dup_c=2
+        while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
+            let dup_c++
+        done
+    }
+    filename="$directory/$filename-polyfy"$dup_c".$format"
+else
+    directory=$(dirname $output)
+    filename=$(basename ${output%.%})
+    [[ -e $directory/$filename.$format ]] && {
+        dup_c=2
+        while [[ -e $directory/$filename"$dup_c".$format ]]; do
+            let dup_c++
+        done
+    }
+    filename="$directory/$filename"$dup_c".$format"
+fi
 
 triangle() {
     length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')
