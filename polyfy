@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SHORT="hr:s:o:"
-LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,red,blue,green,rgb,shape:"
+SHORT="hr:s:o:n:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:"
 OPTIONS=$(getopt -o $(echo $SHORT) \
                  -l $(echo $LONG) \
                  -n "$0" \
@@ -34,24 +34,14 @@ border_c="white"
 shape="diamond"
 overlay="over"
 border_w="10"
-channel="rgb"
 size="3"
 dup_c=2
 
 while true; do
     case "$1" in
-        --red)
-            [[ ! $negate =~ "r" ]] && negate="${negate}r"
-            shift ;;
-        --green)
-            [[ ! $negate =~ "g" ]] && negate="${negate}g"
-            shift ;;
-        --blue)
-            [[ ! $negate =~ "b" ]] && negate="${negate}b"
-            shift ;;
-        --rgb)
-            negate="rgb"
-            shift ;;
+        -n|--negate)
+            negate="-channel ${2//[^rgb]/} -negate"
+            shift 2 ;;
         -r|--rotate)
             rotation_f="${2%,*}"
             rotation_s="${2#*,}"
@@ -60,11 +50,15 @@ while true; do
             overlay="$2"
             shift 2 ;;
         --blur)
-            blur="-blur $2"
+            blur="-blur 0x$2"
             shift 2 ;;
         --size)
             size="$2"
             shift 2 ;;
+        --saturate)
+                saturation="$2"
+                saturate="-modulate 100,$((saturation+100))"
+            shift 2;;
         -s|--shape)
             shape="$2"
             shift 2 ;;
@@ -83,23 +77,16 @@ $(tput bold)SYNOPSIS$(tput sgr0)
     polyfy $(tput bold)[options]$(tput sgr0) $(tput bold)[file...]$(tput sgr0)
 
 $(tput bold)DESCRIPTION$(tput sgr0)
-    A short description about it.
+    Please visit the site to find help, examples, and more information.
+    https://github.com/onespaceman/polyfy
 
 $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)-h, --help $(tput sgr0)
         You're looking at it.
 
     $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
-        Specify the rotations done on the first and second polygon. You are to
-        split the degrees with a ',' delimiter. These values extend the
-        exisiting (default) values.
-
-            | Shape    | first | second |
-            |---------------------------|
-            | Diamond  | 45    | *      |
-            | Triangle | 0     | 180    |
-            | Square   | 0     | 45     |
-            | Circle   | 0     | 0      |
+        Specify the rotations done on the first and second polygon. Split the 
+        degrees with a ',' 
 
     $(tput bold)--border-width$(tput sgr0) <number>
         The border width.
@@ -109,21 +96,14 @@ $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)--border-color$(tput sgr0) <color>
         The color of the border.
 
-        The default calue is white.
+        The default value is white.
 
-    $(tput bold)--blur$(tput sgr0) <radius>x<sigma>
-        Amount to blur the image excluding the area inside polygon. You are to
-        split the values with a 'x'. The important setting in the above is the
-        second sigma value. It can be thought of as an approximation of just
-        how much your want the image to 'spread' or blur, in pixels. Think of
-        it as the size of the brush used to blur the image. The numbers are
-        floating point values, so you can use a very small value like '0.5'.
+    $(tput bold)--blur$(tput sgr0) <sigma>
+        Amount to blur the image excluding the area inside polygon.
+        The numbers are floating point values, so you can use a very small
+        value like '0.5'.
 
-        The first value radius, is also important as it controls how big an
-        area the operator should look at when spreading pixels. This value
-        should typically be either '0' or at a minimum double that of the sigma.
-
-        The default is 0x0 for every shape.
+        The default value is 0.
 
     $(tput bold)--size$(tput sgr0) <number>
         The size of polygon as a fraction of image height.
@@ -131,22 +111,26 @@ $(tput bold)OPTIONS$(tput sgr0)
         The default value is 3.
 
     $(tput bold)-s, --shape$(tput sgr0) <type>
-        What shape should be drawn. You can find the default values of every
-        shape in the $(tput bold)--rotate$(tput sgr0) section.
+        What shape should be drawn.
         The available shapes are: Diamond, square, circle, triangle.
 
         By default the shape will be a diamond.
 
-    $(tput bold)--red, --blue, --green$(tput sgr0)
-        Specify which color channels to negate. None of these flags take any
-        argument and can be specified in any sequence.
+    $(tput bold)--saturate$(tput sgr0) <level>
+        Amount to (de)saturate the image exluding the are inside polygon.
+        At -100 the image is completely desaturated and at 100, completely saturated.
 
-            --red --blue --green
-            --blue --green
-            --red
+        The default value is 0.
 
-        Alternatively you can also use $(tput bold)--rgb$(tput sgr0) to negate
-        all the channels. This is only shorthand for specify all the flags seperately.
+    $(tput bold)-n, --negate$(tput sgr0) <colors>
+        Specify which color channels to negate.
+
+        The color channels are red, green, and blue and are shortened to just the
+        first letter: r, g, and b. Enter them without any characters or spaces
+        between them.
+
+        They can be in any combination or order like: 'g', 'bg' or 'grb'.
+        Repeating the same channel twice cancels itself out.
 
         By default there will be no negated channels.
 
@@ -168,7 +152,6 @@ $(tput bold)OPTIONS$(tput sgr0)
     esac
 done
 
-[[ -n $negate ]] && negate="-channel $negate -negate"
 [[ -f ${1} ]] && {
     file_f="${1//~/$HOME}"; shift
     [[ -f ${1} ]] && {
@@ -224,6 +207,7 @@ circle() {
 # Execute the assigned shape as function.
 $shape
 
+#make the matte
 convert -size "$length"x"$height" xc:none -fill black -draw "$path" \
         -background none -rotate $((rotation_f+rotate_f)) /tmp/polyfy1.png
 
@@ -264,7 +248,7 @@ convert $file_s /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
 }
 
 # Combine clipping and original image, apply blur
-convert -gravity center $file_f $blur /tmp/polyfy2.png -compose Over -composite $filename
+convert -gravity center $file_f $blur $saturate /tmp/polyfy2.png -compose Over -composite $filename
 # Remove temporary files.
 rm -f /tmp/polyfy{1,2}.png
 # Tell the user where and what.
