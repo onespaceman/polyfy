@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SHORT="hr:s:o:n:"
+SHORT="hr:s:o:n:b:"
 LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:,output:"
 OPTIONS=$(getopt -o $(echo $SHORT) \
                  -l $(echo $LONG) \
@@ -67,7 +67,7 @@ while true; do
         -s|--shape)
             shape="$2"
             shift 2 ;;
-        --border-width)
+        -b|--border-width)
             border_w="$2"
             shift 2 ;;
         --border-color)
@@ -104,7 +104,7 @@ $(tput bold)OPTIONS$(tput sgr0)
         Specify the rotations done on the first and second polygon. Split the 
         degrees with a ',' 
 
-    $(tput bold)--border-width$(tput sgr0) <number>
+    $(tput bold)-b, --border-width$(tput sgr0) <number>
         The border width.
 
         The default value is 10.

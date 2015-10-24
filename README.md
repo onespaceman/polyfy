@@ -30,7 +30,7 @@ be affixed to the end, starting with "2".
 `-r or --rotate <first> <second>`
 Specify the rotations done on the first and second polygon. Split the degrees with a ',' 
 
-`--border-width <number>`
+`-b or --border-width <number>`
 The border width.
 
 The default value is 10.
