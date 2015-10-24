@@ -17,7 +17,7 @@ polyfy /path/to/image <options>
 `-h or --help`
 Display the instructions
 
-`--output`
+`--output <filename>`
 Allows the output filename (and, optionally, directory) to be specified. The file extension should not be given as part of `filename`.                             
 If a directory is not specified, the file shall be saved in the current directory
                                                                                  
