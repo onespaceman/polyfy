@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 SHORT="hr:s:o:n:"
-LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:,saveas:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:,output:"
 OPTIONS=$(getopt -o $(echo $SHORT) \
                  -l $(echo $LONG) \
                  -n "$0" \
@@ -61,8 +61,8 @@ while true; do
                 saturation="$2"
                 saturate="-modulate 100,$((saturation+100))"
             shift 2;;
-        --saveas)
-            saveas="$2"
+        --output)
+            output="$2"
             shift 2 ;;
         -s|--shape)
             shape="$2"
@@ -89,7 +89,7 @@ $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)-h, --help $(tput sgr0)
         You're looking at it.
 
-    $(tput bold)--saveas$(tput sgr0) <filename>
+    $(tput bold)--output$(tput sgr0) <filename>
         Allows the output filename (and, optionally, directory) to be specified. The file
         extension should not be given as part of `filename`.
         If a directory is not specified, the file shall be saved in the current directory.
@@ -186,7 +186,7 @@ image_w=$(identify -format "%w" $file_f)
 format=$(basename ${file_f##*.})
 dup_c=""
 
-if [[ -z $saveas ]]; then
+if [[ -z $output ]]; then
     [[ -e $directory/$filename-polyfy.$format ]] && {
         dup_c=2
         while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
@@ -195,8 +195,8 @@ if [[ -z $saveas ]]; then
     }
     filename="$directory/$filename-polyfy"$dup_c".$format"
 else
-    directory=$(dirname $saveas)
-    filename=$(basename ${saveas%.%})
+    directory=$(dirname $output)
+    filename=$(basename ${output%.%})
     [[ -e $directory/$filename.$format ]] && {
         dup_c=2
         while [[ -e $directory/$filename"$dup_c".$format ]]; do
