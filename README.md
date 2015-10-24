@@ -92,7 +92,7 @@ polyfy path/to/image
 polyfy the image with the default options
 
 ```
-polyfy path/to/image -s diamond -n br --size 2 -b 20
+polyfy -s diamond -n br --size 2 -b 20 /path/to/image
 ```
 1. polyfy with a diamond
 2. negate the blue and red channels
