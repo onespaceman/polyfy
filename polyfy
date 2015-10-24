@@ -1,4 +1,4 @@
-#! /usr/bin/env sh
+#! /usr/bin/env bash
 #
 # Copyright (c) 2015
 #
@@ -170,8 +170,10 @@ filename=$(basename ${file_f%.*})
 image_h=$(identify -format "%h" $file_f)
 image_w=$(identify -format "%w" $file_f)
 format=$(basename ${file_f##*.})
+dup_c=""
 
 [[ -e $directory/$filename-polyfy.$format ]] && {
+    dup_c=2
     while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
         let dup_c++
     done
