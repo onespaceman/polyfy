@@ -20,10 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-SHORT="hr:s:o:"
-LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,red,blue,green,rgb,shape:"
-OPTIONS=$(getopt -o $(echo $SHORT) \
-                 -l $(echo $LONG) \
+SHORT="hr:s:o:n:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,negate:,size:,shape:"
+OPTIONS=$(getopt -o $SHORT \
+                 -l $LONG \
                  -n "$0" \
                  -- "$@")
 
@@ -40,18 +40,11 @@ dup_c=2
 
 while true; do
     case "$1" in
-        --red)
-            [[ ! $negate =~ "r" ]] && negate="${negate}r"
-            shift ;;
-        --green)
-            [[ ! $negate =~ "g" ]] && negate="${negate}g"
-            shift ;;
-        --blue)
-            [[ ! $negate =~ "b" ]] && negate="${negate}b"
-            shift ;;
-        --rgb)
-            negate="rgb"
-            shift ;;
+        -n|--negate)
+            # TODO: Elegant of not parsing the -channel and -negate when there's
+            # other characters specified apart from 'rgb'.
+            negate="-channel ${2//[^rgb]/} -negate"
+            shift 2 ;;
         -r|--rotate)
             rotation_f="${2%,*}"
             rotation_s="${2#*,}"
@@ -91,15 +84,7 @@ $(tput bold)OPTIONS$(tput sgr0)
 
     $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
         Specify the rotations done on the first and second polygon. You are to
-        split the degrees with a ',' delimiter. These values extend the
-        exisiting (default) values.
-
-            | Shape    | first | second |
-            |---------------------------|
-            | Diamond  | 45    | *      |
-            | Triangle | 0     | 180    |
-            | Square   | 0     | 45     |
-            | Circle   | 0     | 0      |
+        split the degrees with a ',' delimiter.
 
     $(tput bold)--border-width$(tput sgr0) <number>
         The border width.
@@ -133,20 +118,14 @@ $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)-s, --shape$(tput sgr0) <type>
         What shape should be drawn. You can find the default values of every
         shape in the $(tput bold)--rotate$(tput sgr0) section.
-        The available shapes are: Diamond, square, circle, triangle.
+        The available shapes are: 'Diamond', 'square', 'circle' and triangle'.
 
         By default the shape will be a diamond.
 
-    $(tput bold)--red, --blue, --green$(tput sgr0)
-        Specify which color channels to negate. None of these flags take any
-        argument and can be specified in any sequence.
-
-            --red --blue --green
-            --blue --green
-            --red
-
-        Alternatively you can also use $(tput bold)--rgb$(tput sgr0) to negate
-        all the channels. This is only shorthand for specify all the flags seperately.
+    $(tput bold)-n, --negate$(tput sgr0) <channel>
+        Specify which color channels to negate. The available channels to negate
+        are: 'r', 'g' and 'b'. You are to specify the channels without any
+        delimiter.
 
         By default there will be no negated channels.
 
@@ -168,7 +147,6 @@ $(tput bold)OPTIONS$(tput sgr0)
     esac
 done
 
-[[ -n $negate ]] && negate="-channel $negate -negate"
 [[ -f ${1} ]] && {
     file_f="${1//~/$HOME}"; shift
     [[ -f ${1} ]] && {
@@ -180,16 +158,17 @@ done
     echo "You did not specify a file."
     exit 0
 }
-
-image_h=$(identify -format "%h" $file_f)
-image_w=$(identify -format "%w" $file_f)
 directory=$(dirname $file_f)
 filename=$(basename ${file_f%.*})
+image_h=$(identify -format "%h" $file_f)
+image_w=$(identify -format "%w" $file_f)
 format=$(basename ${file_f##*.})
 
-while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
-    let dup_c++
-done
+[[ -e $directory/$filename-polyfy.$format ]] && {
+    while [[ -e $directory/$filename-polyfy"$dup_c".$format ]]; do
+        let dup_c++
+    done
+}
 filename="$directory/$filename-polyfy"$dup_c".$format"
 
 triangle() {
