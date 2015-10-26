@@ -58,8 +58,8 @@ while true; do
             size="$2"
             shift 2 ;;
         --saturate)
-                saturation="$2"
-                saturate="-modulate 100,$((saturation+100))"
+            saturation="$2"
+            saturate="-modulate 100,$((saturation+100))"
             shift 2;;
         --output)
             output="$2"
@@ -79,27 +79,32 @@ $(tput bold)NAME$(tput sgr0)
     Polyfy - Add cool polygons to any wallpaper
 
 $(tput bold)SYNOPSIS$(tput sgr0)
-    $(tput bold)polyfy$(tput sgr0) [$(tput bold)options$(tput sgr0)] $(tput smul)file$(tput sgr0)
+    $(tput bold)polyfy$(tput sgr0) [option$(tput sgr0)]... $(tput sitm)file$(tput sgr0) [$(tput sitm)second file$(tput sgr0)]
 
 $(tput bold)DESCRIPTION$(tput sgr0)
-    Please visit the site to find help, examples, and more information.
-    https://github.com/onespaceman/polyfy
+    $(tput bold)polyfy$(tput sgr0) is a bash script used to add polygons to images, mainly for the
+    purpose of customizing desktop wallpapers.
+
+    Either one or two image files may be specified. If a second image is specified, the
+    center of the second image shall be "cut out" and inserted into the center
+    of the polygon.
+
+    By default, the output is saved in the current directory as \"[input filename]-polyfy\".
+    This may be changed with the --output flag. If the filename that $(tput bold)polyfy$(tput sgr0) attempts to use
+    already exists, a number shall be affixed to the end to prevent the existing file from
+    being overwritten.
+
+    $(tput bold)polyfy$(tput sgr0) is hosted at https://github.com/onespaceman/polyfy
 
 $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)-h, --help $(tput sgr0)
         You're looking at it.
 
-    $(tput bold)--output$(tput sgr0) <filename>
+    $(tput bold)--output$(tput sgr0) <file>
         Allows the output filename (and, optionally, directory) to be specified. The file
-        extension should not be given as part of `filename`.
+        extension should not be given as part of \`filename\`.
         If a directory is not specified, the file shall be saved in the current directory.
 		
-        The default filename is the input filename suffixed with \"-polyfy\".
-        The default directory is the current directory.
-		
-        If the filename that polyfy attempts to use already exists, a number shall
-        be affixed to the end, starting with \"2\".
-
     $(tput bold)-r, --rotate$(tput sgr0) <first>,<second>
         Specify the rotations done on the first and second polygon. Split the 
         degrees with a ',' 
@@ -122,7 +127,7 @@ $(tput bold)OPTIONS$(tput sgr0)
         The default value is 0.
 
     $(tput bold)--size$(tput sgr0) <number>
-        The size of polygon as a fraction of image height.
+        The size of the polygon as a fraction of image height.
 
         The default value is 3.
 
@@ -160,6 +165,21 @@ $(tput bold)OPTIONS$(tput sgr0)
         | None    | Don't draw a second polygon                 |
 
         The default will be 'over'.
+
+$(tput bold)EXAMPLES$(tput sgr0)
+    polyfy the image with the default options:
+
+        polyfy path/to/image
+
+    polyfy with a diamond, negate the blue and red channels, set the
+    polygon's side length to 1/2 the image's height, and set the polygon's
+    border width to 20 pixels:
+
+        polyfy -s diamond -n br --size 2 -b 20 /path/to/image
+
+    overlay a clipping from the second image onto the first image:
+
+        polyfy /path/to/image /path/to/second/image
             "
             exit  ;;
         --) shift
