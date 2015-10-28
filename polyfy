@@ -133,7 +133,7 @@ $(tput bold)OPTIONS$(tput sgr0)
 
     $(tput bold)-s, --shape$(tput sgr0) <type>
         What shape should be drawn.
-        The available shapes are: 'Diamond', 'square', 'circle' and triangle'.
+        The available shapes are: 'diamond', 'square', 'circle' 'triangle', and 'hexagon'.
 
         By default the shape will be a diamond.
 
@@ -188,6 +188,8 @@ $(tput bold)EXAMPLES$(tput sgr0)
     esac
 done
 
+# Sets the first specified file to file_f and the second to file_s
+# If only one file was specified, then use the same file for both
 [[ -f ${1} ]] && {
     file_f="${1//~/$HOME}"; shift
     [[ -f ${1} ]] && {
@@ -253,6 +255,20 @@ circle() {
     rotate_s="0"
     rotate_f="0"
     path="circle $((length/2)),$((height/2)) $((length/2)),$border_w"
+}
+
+hexagon() {
+	length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}');
+    height=$(echo "$length * sqrt(3) / 2" | bc -l)
+	rotate_s="0"
+	rotate_f="0"
+	point_1="$(echo "$length / 4" | bc -l),0"
+	point_2="0,$(echo "$height / 2" | bc -l)"
+	point_3="$(echo "$length / 4" | bc -l),$height"
+	point_4="$(echo "$length * 0.75" | bc -l),$height"
+	point_5="$length,$(echo "$height / 2" | bc -l)"
+	point_6="$(echo "$length * 0.75" | bc -l),0"
+	path="polygon $point_1 $point_2 $point_3 $point_3 $point_4 $point_5 $point_6"
 }
 
 # Execute the assigned shape as function.
