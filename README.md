@@ -53,7 +53,7 @@ The default value is 3.
 
 `-s or --shape <type>`
 What shape should be drawn.
-The available shapes are: Diamond, square, circle, triangle.
+The available shapes are: Diamond, square, circle, triangle, hexagon.
 
 By default the shape will be a diamond.
 
