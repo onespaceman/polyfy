@@ -269,7 +269,7 @@ convert $file_s /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
 
 [[ $border_w -ne 0 ]] && {
     # Draw the border.
-    convert -size "$length"x"$height" xc:none -stroke $border_c \
+    convert -size "$length"x"$length" xc:none -stroke $border_c \
             -strokewidth $border_w -fill none -draw "${path[*]}" -background none \
             -rotate $rotation_f -trim /tmp/polyfy1.png
     case $overlay in
