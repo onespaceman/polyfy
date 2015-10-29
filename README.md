@@ -7,6 +7,14 @@ add cool polygons to any wallpaper
 ![](https://github.com/onespaceman/polyfy/blob/master/samples/mountains-polyfy.jpg)
 ![](https://github.com/onespaceman/polyfy/blob/master/samples/grass-polyfy.jpg)
 
+#####about:
+polyfy is a bash script used to add polygons to images, mainly for the purpose of customizing desktop wallpapers.
+
+Either one or two image files may be specified. If a second image is specified, the center of the second image shall be "cut out" and inserted into the center of the polygon.
+
+By default, the output is saved in the current directory as \"[input filename]-polyfy\".
+This may be changed with the --output flag. If the filename that polyfy attempts to use already exists, a number shall be affixed to the end to prevent the existing file from being overwritten.
+
 #####usage:
 ```
 chmod +x polyfy  
@@ -49,13 +57,12 @@ The default value is 0.
 `--size <number>`
 The size of polygon as a fraction of image height.
 
-The default value is 3.
+The default value is 2.
 
-`-s or --shape <type>`
-What shape should be drawn.
-The available shapes are: Diamond, square, circle, triangle.
+`-s or --shape <number>`
+What shape should be drawn, defined by the number of sides
 
-By default the shape will be a diamond.
+By default the shape will be a square.
 
 `--saturate <level>`
 Amount to (de)saturate the image exluding the are inside polygon.
@@ -92,9 +99,9 @@ polyfy path/to/image
 polyfy the image with the default options
 
 ```
-polyfy -s diamond -n br --size 2 -b 20 /path/to/image
+polyfy -s 6 -n br --size 2 -b 20 /path/to/image
 ```
-1. polyfy with a diamond
+1. polyfy with a hexagon
 2. negate the blue and red channels
 3. with the polygon's side length at 1/2 the image's height
 4. with a border width of 20pt
@@ -109,4 +116,4 @@ overlay a clipping from the second image onto the first image
 [ImageMagick](http://www.imagemagick.org/)
 
 #####roadmap:
-* more shapes if I can figure out the math
+* borders on polygons with an odd number of sides don't play nice with rotation

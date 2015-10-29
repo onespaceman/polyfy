@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 SHORT="hr:s:o:n:b:"
-LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,saturate:,output:"
+LONG="help,rotate:,blur:,border-color:,border-width:,overlay:,size:,negate:,shape:,sides:,saturate:,output:"
 OPTIONS=$(getopt -o $(echo $SHORT) \
                  -l $(echo $LONG) \
                  -n "$0" \
@@ -30,11 +30,13 @@ OPTIONS=$(getopt -o $(echo $SHORT) \
 eval set -- "$OPTIONS"
 
 # Default variables
-border_c="white"
-shape="diamond"
-overlay="over"
-border_w="10"
-size="3"
+num_sides="4" #default polygon
+overlay="over" #default drawing option for the second polygon
+border_w="10" #default border width
+border_c="white" #default border color
+size="2" #default size of polygon
+rotation_f="0"
+rotation_s="0"
 dup_c=2
 
 while true; do
@@ -64,8 +66,8 @@ while true; do
         --output)
             output="$2"
             shift 2 ;;
-        -s|--shape)
-            shape="$2"
+        -s|--shape|--sides)
+            num_sides="$2"
             shift 2 ;;
         -b|--border-width)
             border_w="$2"
@@ -129,13 +131,12 @@ $(tput bold)OPTIONS$(tput sgr0)
     $(tput bold)--size$(tput sgr0) <number>
         The size of the polygon as a fraction of image height.
 
-        The default value is 3.
+        The default value is 2.
 
-    $(tput bold)-s, --shape$(tput sgr0) <type>
-        What shape should be drawn.
-        The available shapes are: 'Diamond', 'square', 'circle' and triangle'.
+    $(tput bold)-s, --shape, --sides$(tput sgr0) <number>
+        What shape should be drawn, defined by the number of sides
 
-        By default the shape will be a diamond.
+        By default the shape will be a square.
 
     $(tput bold)--saturate$(tput sgr0) <level>
         Amount to (de)saturate the image exluding the are inside polygon.
@@ -171,11 +172,11 @@ $(tput bold)EXAMPLES$(tput sgr0)
 
         polyfy path/to/image
 
-    polyfy with a diamond, negate the blue and red channels, set the
+    polyfy with a hexagon, negate the blue and red channels, set the
     polygon's side length to 1/2 the image's height, and set the polygon's
     border width to 20 pixels:
 
-        polyfy -s diamond -n br --size 2 -b 20 /path/to/image
+        polyfy -s 6 -n br --size 2 -b 20 /path/to/image
 
     overlay a clipping from the second image onto the first image:
 
@@ -226,41 +227,41 @@ else
     filename="$directory/$filename"$dup_c".$format"
 fi
 
-triangle() {
-    length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')
-    height=$(echo "$length * sqrt(3) / 2" | bc -l | awk '{print int($1 + 0.5)}')
-    rotate_s="180"
-    rotate_f="0"
-    path="polygon $((length / 2)),0 $length,$height 0,$height";
-}
+#calculate the path of the given shape
+length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')
+center_x=$(echo "$length / 2" | bc -l)
+#the radius
+radius=$(echo "($length - $border_w) / 2" | bc -l)
+pi=$(echo "scale=10; 4 * a(1)" | bc -l)
 
-square() {
-    length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}')
-    height=$length
-    rotate_s="45"
-    rotate_f="0"
-    path="rectangle 0,0 $length,$height";
-}
+#align the shape to be vertically symetrical
+if [ $((num_sides%2)) -eq 0 ]; then
+   align_shape="1"
+   rotate_s=$(echo "180 / $num_sides" | bc -l | awk '{print int ($1 + 0.5)}')
+else
+   align_shape="0.5"
+   rotate_s="180"
+fi
 
-diamond() {
-    square
-    rotate_f="45"
-}
+degrees=$(echo "180 / $num_sides * $align_shape" | bc -l)
+theta=$(echo "$pi / 180 * $degrees" | bc -l)
 
-circle() {
-    length=$(echo "$image_h / $size" | bc -l | awk '{print int($1 + 0.5)}');
-    height=$length
-    rotate_s="0"
-    rotate_f="0"
-    path="circle $((length/2)),$((height/2)) $((length/2)),$border_w"
-}
+#calculate vertices and place in arrays
+for ((i=0;i<num_sides;i++)) do
+   vertix[$i]=$(echo "$center_x + $radius * c(2 * $pi * $i / $num_sides + $theta)" | bc -l | awk '{print int($1 + 0.5)}')
+   vertiy[$i]=$(echo "$center_x - $radius * s(2 * $pi * $i / $num_sides + $theta)" | bc -l | awk '{print int($1 + 0.5)}')
+done
 
-# Execute the assigned shape as function.
-$shape
+path+=(polygon)
+
+#combine the x and y arrays into x,y coordinates
+for ((i=0;i<num_sides;i++)) do
+   path+=(${vertix[$i]},${vertiy[$i]})
+done
 
 #make the matte
-convert -size "$length"x"$height" xc:none -fill black -draw "$path" \
-        -background none -rotate $((rotation_f+rotate_f)) /tmp/polyfy1.png
+convert -size "$length"x"$length" xc:none -fill black -draw "${path[*]}" \
+        -background none -rotate $rotation_f -trim /tmp/polyfy1.png
 
 # Cut out the first polygon from the original image and negate it.
 convert $file_s /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
@@ -269,8 +270,8 @@ convert $file_s /tmp/polyfy1.png -gravity center -alpha set -compose Dstin \
 [[ $border_w -ne 0 ]] && {
     # Draw the border.
     convert -size "$length"x"$height" xc:none -stroke $border_c \
-            -strokewidth $border_w -fill none -draw "$path" -background none \
-            -rotate $((rotation_f+rotate_f)) /tmp/polyfy1.png
+            -strokewidth $border_w -fill none -draw "${path[*]}" -background none \
+            -rotate $rotation_f -trim /tmp/polyfy1.png
     case $overlay in
         over)
             # Combine the border and rotated border.
